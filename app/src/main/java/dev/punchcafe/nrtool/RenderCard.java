@@ -4,9 +4,11 @@ import dev.punchcafe.nrtool.card.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.List;
 
@@ -98,26 +100,24 @@ public class RenderCard {
                 graphics.drawImage(renderLightProbeCard((LightProbeCard) card), x, y, null);
             }
         }
-/*
-        bufferedImage.getGraphics().drawImage(renderSystemCard(new SystemCard("0x0", "/16", "You win!")), 0, 0, null);
-        bufferedImage.getGraphics().drawImage(renderDeepHackCard(new DeepHackCard("0x0", "oH hI BEBE")), 400, 0, null);
-        bufferedImage.getGraphics().drawImage(renderLightHackCard(new LightHackCard("/16", "none")), 800, 0, null);
-        bufferedImage.getGraphics().drawImage(renderDeepProbeCard(new DeepProbeCard("/16", "none")), 1200, 0, null);
-        bufferedImage.getGraphics().drawImage(renderLightProbeCard(new LightProbeCard("/16", "none")), 1600, 0, null);
- */
         return bufferedImage;
     }
 
     ;
 
     public static void main(String[] args) throws IOException {
+
+        final var filename = getFileName();
+        System.out.println(filename);
+        final var saveFileName = getSaveFileName();
+
         final var bufferedImage = renderDeck(List.of(
                 new SystemCard("0x0", "/16", "You win!"),
                 new DeepHackCard("0x0", "oH hI BEBE"),
                 new LightHackCard("/16", "none"),
                 new DeepProbeCard("/16", "none"),
                 new LightProbeCard("/16", "none")));
-        ImageIO.write(bufferedImage, "jpg", new File("rendered-deck.jpg"));
+        ImageIO.write(bufferedImage, "jpg", new File(saveFileName));
         JLabel picLabel = new JLabel(new ImageIcon(bufferedImage));
         JPanel jPanel = new JPanel();
         jPanel.add(picLabel);
@@ -125,6 +125,30 @@ public class RenderCard {
         f.setSize(new Dimension(bufferedImage.getWidth(), bufferedImage.getHeight()));
         f.add(jPanel);
         f.setVisible(true);
+    }
+
+    public static String getFileName(){
+        FileDialog dialog = new FileDialog((Frame)null, "Select File to Open");
+        dialog.setMode(FileDialog.LOAD);
+        dialog.setVisible(true);
+        dialog.setFilenameFilter((directory, fileName) -> fileName.endsWith(".jpg"));
+        String file = dialog.getFile();
+        String directory = dialog.getDirectory();
+        System.out.println(directory);
+        System.out.println(file + " chosen.");
+        return file;
+    }
+
+    public static String getSaveFileName(){
+        FileDialog dialog = new FileDialog((Frame)null, "Select File to Open");
+        dialog.setMode(FileDialog.SAVE);
+        dialog.setVisible(true);
+        dialog.setFilenameFilter((directory, fileName) -> fileName.endsWith(".jpg"));
+        String file = dialog.getFile();
+        String directory = dialog.getDirectory();
+        System.out.println(directory);
+        System.out.println(file + " chosen.");
+        return directory + file;
     }
 
 }
