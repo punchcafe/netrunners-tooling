@@ -1,16 +1,21 @@
 package dev.punchcafe.nrtool;
 
 import dev.punchcafe.nrtool.card.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FilenameFilter;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RenderCard {
 
@@ -73,6 +78,79 @@ public class RenderCard {
         return cardImage;
     }
 
+    public static List<Object> getCardsFromFile(final String fileName) throws IOException {
+        final var workBook = getExcelWorkbook(fileName);
+        return Stream.of(parseSystemCards(workBook.getSheetAt(0)),
+                parseDeepHackCards(workBook.getSheetAt(1)),
+                parseLightHackCards(workBook.getSheetAt(2)),
+                parseDeepProbeCards(workBook.getSheetAt(3)),
+                parseLightProbeCards(workBook.getSheetAt(4)))
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+    }
+
+    public static Workbook getExcelWorkbook(final String filename) throws IOException {
+        return WorkbookFactory.create(new FileInputStream(filename));
+    }
+
+    public static List<SystemCard> parseSystemCards(final Sheet workSheet) {
+        final List<SystemCard> cards = new ArrayList<>();
+        for (int i = 1; i < workSheet.getPhysicalNumberOfRows(); i++) {
+            cards.add(new SystemCard(getCellValueOrEmptyString(workSheet.getRow(i).getCell(0)),
+                    getCellValueOrEmptyString(workSheet.getRow(i).getCell(1)),
+                    getCellValueOrEmptyString(workSheet.getRow(i).getCell(2)),
+                    getCellValueOrEmptyString(workSheet.getRow(i).getCell(3))));
+        }
+        return cards;
+    }
+
+    public static List<LightHackCard> parseLightHackCards(final Sheet workSheet) {
+        final List<LightHackCard> cards = new ArrayList<>();
+        for (int i = 1; i < workSheet.getPhysicalNumberOfRows(); i++) {
+            cards.add(new LightHackCard(getCellValueOrEmptyString(workSheet.getRow(i).getCell(0)),
+                    getCellValueOrEmptyString(workSheet.getRow(i).getCell(1)),
+                    getCellValueOrEmptyString(workSheet.getRow(i).getCell(2))));
+        }
+        return cards;
+    }
+
+    public static List<DeepHackCard> parseDeepHackCards(final Sheet workSheet) {
+        final List<DeepHackCard> cards = new ArrayList<>();
+        for (int i = 1; i < workSheet.getPhysicalNumberOfRows(); i++) {
+            cards.add(new DeepHackCard(getCellValueOrEmptyString(workSheet.getRow(i).getCell(0)),
+                    getCellValueOrEmptyString(workSheet.getRow(i).getCell(1)),
+                    getCellValueOrEmptyString(workSheet.getRow(i).getCell(2))));
+        }
+        return cards;
+    }
+
+    public static List<LightProbeCard> parseLightProbeCards(final Sheet workSheet) {
+        final List<LightProbeCard> cards = new ArrayList<>();
+        for (int i = 1; i < workSheet.getPhysicalNumberOfRows(); i++) {
+            cards.add(new LightProbeCard(getCellValueOrEmptyString(workSheet.getRow(i).getCell(0)),
+                    getCellValueOrEmptyString(workSheet.getRow(i).getCell(1)),
+                    getCellValueOrEmptyString(workSheet.getRow(i).getCell(2))));
+        }
+        return cards;
+    }
+
+    public static List<DeepProbeCard> parseDeepProbeCards(final Sheet workSheet) {
+        final List<DeepProbeCard> cards = new ArrayList<>();
+        for (int i = 1; i < workSheet.getPhysicalNumberOfRows(); i++) {
+            cards.add(new DeepProbeCard(getCellValueOrEmptyString(workSheet.getRow(i).getCell(0)),
+                    getCellValueOrEmptyString(workSheet.getRow(i).getCell(1)),
+                    getCellValueOrEmptyString(workSheet.getRow(i).getCell(2))));
+        }
+        return cards;
+    }
+
+    private static String getCellValueOrEmptyString(final Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+        return cell.getStringCellValue();
+    }
+
     public static BufferedImage renderDeck(final List<Object> cards) throws IOException {
 
         final int rows = cards.size() / CARD_GRID_WIDTH + 1;
@@ -111,13 +189,11 @@ public class RenderCard {
         System.out.println(filename);
         final var saveFileName = getSaveFileName();
 
-        final var bufferedImage = renderDeck(List.of(
-                new SystemCard("0x0", "/16", "You win!"),
-                new DeepHackCard("0x0", "oH hI BEBE"),
-                new LightHackCard("/16", "none"),
-                new DeepProbeCard("/16", "none"),
-                new LightProbeCard("/16", "none")));
+        final var cards = getCardsFromFile(filename);
+        final var bufferedImage = renderDeck(cards);
+
         ImageIO.write(bufferedImage, "jpg", new File(saveFileName));
+        /*
         JLabel picLabel = new JLabel(new ImageIcon(bufferedImage));
         JPanel jPanel = new JPanel();
         jPanel.add(picLabel);
@@ -125,10 +201,11 @@ public class RenderCard {
         f.setSize(new Dimension(bufferedImage.getWidth(), bufferedImage.getHeight()));
         f.add(jPanel);
         f.setVisible(true);
+         */
     }
 
-    public static String getFileName(){
-        FileDialog dialog = new FileDialog((Frame)null, "Select File to Open");
+    public static String getFileName() {
+        FileDialog dialog = new FileDialog((Frame) null, "Select File to Open");
         dialog.setMode(FileDialog.LOAD);
         dialog.setVisible(true);
         dialog.setFilenameFilter((directory, fileName) -> fileName.endsWith(".jpg"));
@@ -136,11 +213,11 @@ public class RenderCard {
         String directory = dialog.getDirectory();
         System.out.println(directory);
         System.out.println(file + " chosen.");
-        return file;
+        return directory + file;
     }
 
-    public static String getSaveFileName(){
-        FileDialog dialog = new FileDialog((Frame)null, "Select File to Open");
+    public static String getSaveFileName() {
+        FileDialog dialog = new FileDialog((Frame) null, "Select File to Open");
         dialog.setMode(FileDialog.SAVE);
         dialog.setVisible(true);
         dialog.setFilenameFilter((directory, fileName) -> fileName.endsWith(".jpg"));
